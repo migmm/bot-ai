@@ -3,26 +3,30 @@ import { callLLM } from './llmService.js';
 import { getSystemPrompt } from '../utils/systemPrompt.js';
 
 export const handleChat = async (message, customerId) => {
-    const chatHistory = await Chat.find({ customerId }).sort({ timestamp: 1 });
+    let chat = await Chat.findOne({ customerId });
+
+    if (!chat) {
+        chat = new Chat({ customerId, messages: [] });
+    }
 
     const context = {
         message,
         customerId,
-        chatHistory
+        chatHistory: chat.messages
     };
 
     const llmResponse = await callLLM(createMessages(context));
 
-    await Chat.create({
-        customerId,
+    chat.messages.push({
         message,
-        response: llmResponse,
-        consultationNumber: await generateConsultationNumber(customerId)
+        response: llmResponse
     });
+
+    chat.lastActivity = new Date();
+    await chat.save();
 
     return llmResponse;
 };
-
 const createMessages = (context) => {
     const systemPrompt = getSystemPrompt();
 
@@ -44,9 +48,4 @@ const createMessages = (context) => {
     messages.push({ role: 'user', content: context.message });
 
     return messages;
-};
-
-const generateConsultationNumber = async (customerId) => {
-    const count = await Chat.countDocuments({ customerId });
-    return `${customerId}-${count + 1}`;
 };
