@@ -27,17 +27,13 @@ export const handleChat = async (message, customerId) => {
 
     return llmResponse;
 };
+
 const createMessages = (context) => {
     const systemPrompt = getSystemPrompt();
 
-    const updatedSystemPrompt = systemPrompt
-        .replace(/{price}/g, "the requested price")
-        .replace(/{product}/g, "the requested product")
-        .replace(/{total}/g, "the calculated total");
-
     const messages = [{
         role: 'system',
-        content: updatedSystemPrompt
+        content: systemPrompt
     }];
 
     context.chatHistory.forEach(chat => {
