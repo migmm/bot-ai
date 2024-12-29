@@ -9,6 +9,7 @@ const config = {
     llmApiUrl: process.env.LLM_API_URL,
     llmApiKey: process.env.LLM_API_KEY,
     llmModel: process.env.LLM_MODEL,
+    llmSystemPrompt: process.env.SYSTEM_PROMPT,
 
     store: {
         name: "Electrónica XYZ",
