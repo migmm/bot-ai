@@ -20,9 +20,8 @@ app.post('/api/chat', async (req, res) => {
 
 app.get('/api/chat-history/:customerId', async (req, res) => {
     try {
-        const chats = await Chat.find({ customerId: req.params.customerId })
-            .sort({ timestamp: -1 });
-        res.json(chats);
+        const chat = await Chat.findOne({ customerId: req.params.customerId });
+        res.json(chat ? chat.messages : []);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
