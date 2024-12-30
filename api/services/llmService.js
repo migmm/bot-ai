@@ -7,19 +7,29 @@ export const callLLM = async (messages) => {
             config.llmApiUrl,
             {
                 model: config.llmModel,
-                messages: messages
+                messages: messages,
+                temperature: 0.1,
+                max_tokens: 100,
             },
             {
                 headers: {
-                    'Authorization': `Bearer ${config.llmApiKey}`,
-                    'Content-Type': 'application/json'
-                }
+                    Authorization: `Bearer ${config.llmApiKey}`,
+                },
             }
         );
 
-        return response.data.choices[0].message.content;
+        const llmResponse = response.data.choices[0].message.content;
+
+        try {
+            return JSON.parse(llmResponse);
+        } catch (e) {
+            console.error("Unstructured LLM response:", llmResponse);
+            return { intentType: "unknown" };
+        }
     } catch (error) {
-        console.error('Error calling LLM API:', error);
-        return 'Error processing your request.';
+        console.error("Error calling LLM API:", error);
+        return { intentType: "unknown" };
     }
 };
+
+
