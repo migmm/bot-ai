@@ -1,35 +1,17 @@
 import express from 'express';
-import connectDB from './services/dbService.js';
-import { handleChat } from './services/chatService.js';
-import Chat from './models/Chat.js';
-import config from './config/config.js';
+import { connectDB } from './config/database.js';
+import chatRoutes from './routes/chatRoutes.js';
+import { config } from './config/constants.js';
 
 const app = express();
 app.use(express.json());
 
-app.post('/api/chat', async (req, res) => {
-    try {
-        const { message, customerId } = req.body;
-        const response = await handleChat(message, customerId);
-        res.json({ response });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+connectDB();
 
-app.get('/api/chat-history/:customerId', async (req, res) => {
-    try {
-        const chat = await Chat.findOne({ customerId: req.params.customerId });
-        res.json(chat ? chat.messages : []);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+app.use('/api', chatRoutes);
 
-connectDB().then(() => {
-    app.listen(config.port, () => {
-        console.log(`Server listening on port ${config.port}`);
-    });
+const PORT = config.serverPort || 3000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
