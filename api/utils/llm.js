@@ -8,8 +8,8 @@ export const callLLM = async (messages) => {
             {
                 model: config.llmModel,
                 messages: messages,
-                temperature: 0.1,
-                max_tokens: 150,
+                temperature: 0,
+                max_tokens: 300,
             },
             {
                 headers: {
