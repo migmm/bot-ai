@@ -1,4 +1,4 @@
-export const menu = [
+const  menu = [
     {
         name: "California Roll",
         category: "sushi",
@@ -84,3 +84,5 @@ export const menu = [
         servings: 1
     }
 ];
+
+export default menu;
