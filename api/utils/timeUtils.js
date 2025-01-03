@@ -1,5 +1,6 @@
 import schedule from '../data/schedule.js';
 import holidays from '../data/holidays.js';
+import { config } from '../config/constants.js';
 
 export const getBusinessStatus = (date = new Date()) => {
     const targetDate = new Date(date);
@@ -19,7 +20,7 @@ export const getBusinessStatus = (date = new Date()) => {
     if (holiday) {
         return {
             isOpen: false,
-            status: `El ${targetDate.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} es feriado (${holiday.name}). No abrimos ese día. Reabriremos el ${new Date(holiday.reopenDate).toLocaleDateString('es-ES')}.`,
+            status: `El ${targetDate.toLocaleDateString(config.locales, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} es feriado (${holiday.name}). No abrimos ese día. Reabriremos el ${new Date(holiday.reopenDate).toLocaleDateString(config.locales)}.`,
             isHoliday: true,
             reopenDate: holiday.reopenDate,
             reason: holiday.name
@@ -42,9 +43,9 @@ export const getBusinessStatus = (date = new Date()) => {
         };
     }
 
-    const currentTime = targetDate.toLocaleTimeString('en-US', { hour12: false });
-    const openTime = new Date(`${today} ${daySchedule.openTime}`).toLocaleTimeString('en-US', { hour12: false });
-    const closeTime = new Date(`${today} ${daySchedule.closeTime}`).toLocaleTimeString('en-US', { hour12: false });
+    const currentTime = targetDate.toLocaleTimeString(config.locales, { hour12: false });
+    const openTime = new Date(`${today} ${daySchedule.openTime}`).toLocaleTimeString(config.locales, { hour12: false });
+    const closeTime = new Date(`${today} ${daySchedule.closeTime}`).toLocaleTimeString(config.locales, { hour12: false });
 
     console.log("Hora actual:", currentTime);
     console.log("Hora de apertura:", openTime);
@@ -53,7 +54,7 @@ export const getBusinessStatus = (date = new Date()) => {
     if (currentTime < openTime) {
         return {
             isOpen: false,
-            status: `Cerrado. Abrimos el ${targetDate.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} a las ${daySchedule.openTime}.`,
+            status: `Cerrado. Abrimos el ${targetDate.toLocaleDateString(config.locales, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} a las ${daySchedule.openTime}.`,
             isHoliday: false
         };
     }
@@ -70,7 +71,7 @@ export const getBusinessStatus = (date = new Date()) => {
 
     return {
         isOpen: true,
-        status: `¡Abierto! Cerramos el ${targetDate.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} a las ${daySchedule.closeTime}.`,
+        status: `¡Abierto! Cerramos el ${targetDate.toLocaleDateString(config.locales, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} a las ${daySchedule.closeTime}.`,
         isHoliday: false
     };
 };
