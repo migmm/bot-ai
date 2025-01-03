@@ -8,8 +8,8 @@ export const callLLM = async (messages) => {
             {
                 model: config.llmModel,
                 messages: messages,
-                temperature: 0,
-                max_tokens: 300,
+                temperature: config.temperature,
+                max_tokens: config.maxTokens,
             },
             {
                 headers: {
@@ -19,6 +19,7 @@ export const callLLM = async (messages) => {
         );
 
         return response.data.choices[0].message.content;
+
     } catch (error) {
         console.error("Error calling LLM API:", error);
         return "There was an error processing your request, try again later.";
