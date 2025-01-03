@@ -1,4 +1,4 @@
-export const promos = [
+const promos = [
     {
         title: "Descuento 20% en Rollos de Atún",
         description: "Obtén un 20% de descuento en todos los rollos de atún hasta el 31 de enero.",
@@ -18,3 +18,5 @@ export const promos = [
         validUntil: new Date("2025-02-28T23:59:59.000Z")
     }
 ];
+
+export default promos 
