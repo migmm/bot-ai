@@ -1,9 +1,10 @@
 import { callLLM } from '../utils/llm.js';
-import menu from '../data/menu.js';
-import promos from '../data/promos.js';
-import schedule from '../data/schedule.js';
+import Menu from '../models/Menu.js';
+import Promo from '../models/Promo.js';
+import Schedule from '../models/Schedule.js';
+import BusinessInfo from '../models/BusinessInfo.js';
+import Holiday from '../models/Holiday.js';
 import Order from '../models/Order.js';
-import businessInfo from '../data/businessInfo.js';
 import { config } from '../config/constants.js';
 import { getBusinessStatusWithTimeInfo } from '../utils/timeUtils.js';
 import { extractDateFromQuery } from '../utils/dateUtils.js';
@@ -17,40 +18,6 @@ const classifyQuery = async (message) => {
         { role: 'user', content: message },
     ]);
     return response.trim().toLowerCase();
-};
-
-const groupScheduleByHours = (schedule) => {
-    const grouped = [];
-    let currentGroup = null;
-
-    schedule.forEach(day => {
-        const hoursKey = `${day.openTime}-${day.closeTime}`;
-        if (!currentGroup || currentGroup.hoursKey !== hoursKey) {
-            currentGroup = {
-                days: [day.day],
-                hoursKey,
-                openTime: day.openTime,
-                closeTime: day.closeTime
-            };
-            grouped.push(currentGroup);
-        } else {
-            currentGroup.days.push(day.day);
-        }
-    });
-
-    return grouped;
-};
-
-const formatGroupedSchedule = (groupedSchedule) => {
-    return groupedSchedule.map(group => {
-        if (group.days.length === 1) {
-            return `${group.days[0]}: ${group.openTime} - ${group.closeTime}`;
-        } else {
-            const firstDay = group.days[0];
-            const lastDay = group.days[group.days.length - 1];
-            return `${firstDay} a ${lastDay}: ${group.openTime} - ${group.closeTime}`;
-        }
-    }).join('\n');
 };
 
 export const handleChat = async (message, customerId) => {
@@ -82,49 +49,69 @@ export const handleChat = async (message, customerId) => {
 
     switch (queryType) {
         case 'horarios':
-            relevantData = JSON.stringify({
-                schedule,
-                businessStatus,
-                timeInfo,
-                queryDate: queryDate ? queryDate.toISOString() : null
-            }, null, 2);
-            break;
-        case 'promociones':
-            relevantData = JSON.stringify(promos, null, 2);
-            break;
-        case 'ordenes':
-            const order = await Order.findOne({ customerId });
-            if (order) {
-                relevantData = JSON.stringify({
-                    status: order.status,
-                    items: order.items,
-                    total: order.total
-                }, null, 2);
-            } else {
-                relevantData = "No se encontró ninguna orden para este cliente.";
+            try {
+                const scheduleFromDB = await Schedule.find();
+                relevantData = JSON.stringify(scheduleFromDB);
+            } catch (error) {
+                console.error("Error al obtener el horario:", error);
+                relevantData = "Error al obtener el horario. Inténtalo de nuevo más tarde.";
             }
             break;
+
+        case 'promociones':
+            try {
+                const promosFromDB = await Promo.find();
+                relevantData = JSON.stringify(promosFromDB);
+            } catch (error) {
+                console.error("Error al obtener las promociones:", error);
+                relevantData = "Error al obtener las promociones. Inténtalo de nuevo más tarde.";
+            }
+            break;
+
+        case 'ordenes':
+            try {
+                const order = await Order.findOne({ customerId });
+                if (order) {
+                    relevantData = JSON.stringify(order);
+                } else {
+                    relevantData = "No se encontró ninguna orden para este cliente.";
+                }
+            } catch (error) {
+                console.error("Error al obtener la orden:", error);
+                relevantData = "Error al obtener la orden. Inténtalo de nuevo más tarde.";
+            }
+            break;
+
         case 'productos':
-            relevantData = JSON.stringify(menu, null, 2);
+            try {
+                const menuFromDB = await Menu.find();
+                relevantData = JSON.stringify(menuFromDB);
+            } catch (error) {
+                console.error("Error al obtener el menú:", error);
+                relevantData = "Error al obtener el menú. Inténtalo de nuevo más tarde.";
+            }
             break;
-        case 'pedidos':
-            relevantData = JSON.stringify({ menu, promos }, null, 2);
-            break;
+
         case 'info':
-            relevantData = JSON.stringify(businessInfo, null, 2);
+            try {
+                const businessInfoFromDB = await BusinessInfo.findOne();
+                relevantData = JSON.stringify(businessInfoFromDB);
+            } catch (error) {
+                console.error("Error al obtener la información del negocio:", error);
+                relevantData = "Error al obtener la información del negocio. Inténtalo de nuevo más tarde.";
+            }
             break;
+
         default:
             relevantData = "";
             break;
     }
 
-    const groupedSchedule = groupScheduleByHours(schedule);
-    const scheduleMessage = formatGroupedSchedule(groupedSchedule);
+    const businessInfoFromDB = await BusinessInfo.findOne();
 
     let finalSystemPrompt = config.llmSystemPrompt
-        .replace('{{SCHEDULE_MESSAGE}}', scheduleMessage)
-        .replace('{{BUSINESS_INFO}}', JSON.stringify(businessInfo, null, 2))
-        .replace('{{BUSINESS_NAME}}', businessInfo.name);
+        .replace('{{BUSINESS_NAME}}', businessInfoFromDB.name)
+        .replace('{{BUSINESS_INFO}}', JSON.stringify(businessInfoFromDB));
 
     if (!businessStatus.isOpen) {
         finalSystemPrompt += ` ${businessStatus.status}`;
@@ -132,7 +119,6 @@ export const handleChat = async (message, customerId) => {
         finalSystemPrompt += ` ¡Abierto! ${businessStatus.status}`;
     }
 
-    // Add relevant data to the system prompt
     if (relevantData) {
         finalSystemPrompt += `\n\nInformación relevante:\n${relevantData}`;
     }
