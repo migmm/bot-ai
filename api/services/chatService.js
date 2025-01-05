@@ -3,7 +3,6 @@ import Menu from '../models/Menu.js';
 import Promo from '../models/Promo.js';
 import Schedule from '../models/Schedule.js';
 import BusinessInfo from '../models/BusinessInfo.js';
-import Holiday from '../models/Holiday.js';
 import Order from '../models/Order.js';
 import { config } from '../config/constants.js';
 import { getBusinessStatusWithTimeInfo } from '../utils/timeUtils.js';
@@ -13,11 +12,36 @@ const chatHistory = {};
 
 const classifyQuery = async (message) => {
     const classificationPrompt = config.classificationPrompt.replace('{{MESSAGE}}', message);
+    console.log("Prompt de clasificación:", classificationPrompt);
+
     const response = await callLLM([
         { role: 'system', content: classificationPrompt },
         { role: 'user', content: message },
     ]);
+
+    console.log("Categoría devuelta por el LLM:", response.trim().toLowerCase());
     return response.trim().toLowerCase();
+};
+
+const addItemToOrder = async (message, customerId) => {
+    const menuItems = await Menu.find();
+    const itemNames = menuItems.map(item => item.name.toLowerCase());
+
+    const itemRequest = message.toLowerCase();
+    const itemMatch = itemNames.find(item => itemRequest.includes(item));
+
+    if (itemMatch) {
+        const item = menuItems.find(menuItem => menuItem.name.toLowerCase() === itemMatch);
+        console.log("Ítem encontrado:", item);
+        return {
+            name: item.name,
+            quantity: 1,
+            price: item.price
+        };
+    }
+
+    console.log("No se encontró ningún ítem en el mensaje:", message);
+    return null;
 };
 
 export const handleChat = async (message, customerId) => {
@@ -30,7 +54,7 @@ export const handleChat = async (message, customerId) => {
     }
 
     if (!chatHistory[customerId]) {
-        chatHistory[customerId] = { messages: [] };
+        chatHistory[customerId] = { messages: [], orderItems: [] };
     }
 
     const chat = chatHistory[customerId];
@@ -85,10 +109,29 @@ export const handleChat = async (message, customerId) => {
         case 'productos':
             try {
                 const menuFromDB = await Menu.find();
-                relevantData = JSON.stringify(menuFromDB);
+                console.log("Menú obtenido de la base de datos:", menuFromDB);
+                relevantData = menuFromDB.map(item => 
+                    `- ${item.name}: $${item.price}\n  Descripción: ${item.description}\n`
+                ).join('\n');
+                console.log("Menú formateado:", relevantData);
             } catch (error) {
                 console.error("Error al obtener el menú:", error);
                 relevantData = "Error al obtener el menú. Inténtalo de nuevo más tarde.";
+            }
+            break;
+
+        case 'agregar_item':
+            try {
+                const item = await addItemToOrder(message, customerId);
+                if (item) {
+                    chat.orderItems.push(item);
+                    relevantData = `Se agregó ${item.name} al pedido.`;
+                } else {
+                    relevantData = "No se pudo agregar el ítem al pedido. Por favor, intenta de nuevo.";
+                }
+            } catch (error) {
+                console.error("Error al agregar el ítem al pedido:", error);
+                relevantData = "Error al agregar el ítem al pedido. Inténtalo de nuevo más tarde.";
             }
             break;
 
@@ -131,6 +174,45 @@ export const handleChat = async (message, customerId) => {
     ];
 
     const llmResponse = await callLLM(messages);
+
+    if (llmResponse.toLowerCase().includes("confirmar pedido")) {
+        try {
+            if (chat.orderItems.length === 0) {
+                const errorMessage = "No has agregado ningún ítem al pedido. Por favor, agrega ítems antes de confirmar.";
+                const assistantMessage = { role: 'assistant', content: errorMessage, timestamp: new Date() };
+                chat.messages.push(assistantMessage);
+                return errorMessage;
+            }
+    
+            const items = chat.orderItems;
+            const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    
+            const newOrder = new Order({
+                customerId,
+                items,
+                total,
+                status: "En preparación",
+                createdAt: new Date()
+            });
+    
+            await newOrder.save();
+    
+            chat.orderItems = [];
+    
+            const confirmationMessage = `Pedido confirmado, tu ID es ${newOrder._id} y el precio es $${total}.`;
+            const assistantMessage = { role: 'assistant', content: confirmationMessage, timestamp: new Date() };
+            chat.messages.push(assistantMessage);
+    
+            return confirmationMessage;
+        } catch (error) {
+            console.error("Error al crear el pedido:", error);
+            const errorMessage = "Error al crear el pedido. Inténtalo de nuevo más tarde.";
+            const assistantMessage = { role: 'assistant', content: errorMessage, timestamp: new Date() };
+            chat.messages.push(assistantMessage);
+    
+            return errorMessage;
+        }
+    }
 
     const assistantMessage = { role: 'assistant', content: llmResponse, timestamp: new Date() };
     chat.messages.push(assistantMessage);
