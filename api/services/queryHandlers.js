@@ -1,3 +1,5 @@
+// api/services/queryHandlers.js
+
 import Menu from '../models/Menu.js';
 import Promo from '../models/Promo.js';
 import Schedule from '../models/Schedule.js';
@@ -72,14 +74,10 @@ export const handleAgregarItemQuery = async (message, customerId, chatHistory) =
     }
 };
 
-export const handlePedidosQuery = async (customerId, message, chatHistory) => {
-    try {
-        const customerHistory = chatHistory[customerId] || { orderItems: [] };
-
-        if (message.toLowerCase().includes("confirmar") || 
-            message.toLowerCase().includes("listo")) {
-            
-            const items = customerHistory.orderItems;
+export const handlePedidosQuery = async (message, customerId, chatHistory) => {
+    if (message.toLowerCase().includes("confirmar") || message.toLowerCase().includes("listo")) {
+        try {
+            const items = chatHistory[customerId].orderItems;
 
             if (items.length === 0) {
                 return "No has agregado ningún ítem al pedido. Por favor, agrega ítems antes de confirmar.";
@@ -97,21 +95,20 @@ export const handlePedidosQuery = async (customerId, message, chatHistory) => {
 
             await newOrder.save();
 
-            customerHistory.orderItems = [];
-            chatHistory[customerId] = customerHistory;
+            chatHistory[customerId].orderItems = [];
 
             return `Tu pedido ha sido confirmado con éxito. Tu ID es ${newOrder._id} y el total es $${total}.`;
+        } catch (error) {
+            console.error("Error al crear el pedido:", error);
+            return "Hubo un problema al confirmar tu pedido. Por favor, inténtalo de nuevo más tarde.";
         }
-
+    } else {
         const menuFromDB = await Menu.find();
         const menuList = menuFromDB.map(item =>
             `- ${item.name}: $${item.price}\n  Descripción: ${item.description}\n`
         ).join('\n');
 
         return `Aquí está nuestro menú:\n${menuList}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".`;
-    } catch (error) {
-        console.error("Error en handlePedidosQuery:", error);
-        return "Hubo un problema al procesar tu pedido. Por favor, inténtalo de nuevo más tarde.";
     }
 };
 
