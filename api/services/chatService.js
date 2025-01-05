@@ -121,35 +121,86 @@ export const handleChat = async (message, customerId) => {
             break;
 
         case 'agregar_item':
-            try {
-                const item = await addItemToOrder(message, customerId);
-                if (item) {
-                    chat.orderItems.push(item);
-                    relevantData = `Se agregó ${item.name} al pedido.`;
-                } else {
-                    relevantData = "No se pudo agregar el ítem al pedido. Por favor, intenta de nuevo.";
-                }
-            } catch (error) {
-                console.error("Error al agregar el ítem al pedido:", error);
-                relevantData = "Error al agregar el ítem al pedido. Inténtalo de nuevo más tarde.";
+            // Lógica para agregar ítems al carrito
+            const item = await addItemToOrder(message, customerId);
+            if (item) {
+                chat.orderItems.push(item);
+                relevantData = `Se agregó ${item.name} al pedido.`;
+            } else {
+                relevantData = "No se pudo agregar el ítem al pedido. Por favor, intenta de nuevo.";
             }
             break;
 
-        case 'info':
-            try {
-                const businessInfoFromDB = await BusinessInfo.findOne();
-                relevantData = JSON.stringify(businessInfoFromDB);
-            } catch (error) {
-                console.error("Error al obtener la información del negocio:", error);
-                relevantData = "Error al obtener la información del negocio. Inténtalo de nuevo más tarde.";
+        case 'pedidos':
+            // Lógica para manejar pedidos
+            if (message.toLowerCase().includes("confirmar") || message.toLowerCase().includes("sí") || message.toLowerCase().includes("claro") || message.toLowerCase().includes("ok")) {
+                // Confirmar el pedido
+                try {
+                    if (chat.orderItems.length === 0) {
+                        const errorMessage = "No has agregado ningún ítem al pedido. Por favor, agrega ítems antes de confirmar.";
+                        const assistantMessage = { role: 'assistant', content: errorMessage, timestamp: new Date() };
+                        chat.messages.push(assistantMessage);
+                        return errorMessage;
+                    }
+
+                    const items = chat.orderItems;
+                    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+                    const newOrder = new Order({
+                        customerId,
+                        items,
+                        total,
+                        status: "Pending",
+                        createdAt: new Date()
+                    });
+
+                    await newOrder.save();
+
+                    chat.orderItems = [];
+
+                    const confirmationMessage = `Pedido confirmado, tu ID es ${newOrder._id} y el precio es $${total}.`;
+                    const assistantMessage = { role: 'assistant', content: confirmationMessage, timestamp: new Date() };
+                    chat.messages.push(assistantMessage);
+
+                    return confirmationMessage;
+                } catch (error) {
+                    console.error("Error al crear el pedido:", error);
+                    const errorMessage = "Error al crear el pedido. Inténtalo de nuevo más tarde.";
+                    const assistantMessage = { role: 'assistant', content: errorMessage, timestamp: new Date() };
+                    chat.messages.push(assistantMessage);
+
+                    return errorMessage;
+                }
+            } else {
+                // Si no es una confirmación, ofrecer el menú y permitir agregar ítems
+                const menuFromDB = await Menu.find();
+                relevantData = menuFromDB.map(item =>
+                    `- ${item.name}: $${item.price}\n  Descripción: ${item.description}\n`
+                ).join('\n');
+
+                const assistantMessage = { role: 'assistant', content: `Aquí está nuestro menú:\n${relevantData}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".`, timestamp: new Date() };
+                chat.messages.push(assistantMessage);
+
+                return `Aquí está nuestro menú:\n${relevantData}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".`;
             }
             break;
+
+        case 'info': 
+        try {
+            const businessInfoFromDB = await BusinessInfo.findOne();
+            relevantData = JSON.stringify(businessInfoFromDB);
+        } catch (error) {
+            console.error("Error al obtener la información del negocio:", error);
+            relevantData = "Error al obtener la información del negocio. Inténtalo de nuevo más tarde.";
+        }
+        break;
 
         default:
             relevantData = "";
             break;
     }
 
+    // Resto de la lógica para manejar la respuesta del LLM
     const businessInfoFromDB = await BusinessInfo.findOne();
 
     let finalSystemPrompt = config.llmSystemPrompt
@@ -174,45 +225,6 @@ export const handleChat = async (message, customerId) => {
     ];
 
     const llmResponse = await callLLM(messages);
-
-    if (llmResponse.toLowerCase().includes("confirmar pedido")) {
-        try {
-            if (chat.orderItems.length === 0) {
-                const errorMessage = "No has agregado ningún ítem al pedido. Por favor, agrega ítems antes de confirmar.";
-                const assistantMessage = { role: 'assistant', content: errorMessage, timestamp: new Date() };
-                chat.messages.push(assistantMessage);
-                return errorMessage;
-            }
-    
-            const items = chat.orderItems;
-            const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    
-            const newOrder = new Order({
-                customerId,
-                items,
-                total,
-                status: "En preparación",
-                createdAt: new Date()
-            });
-    
-            await newOrder.save();
-    
-            chat.orderItems = [];
-    
-            const confirmationMessage = `Pedido confirmado, tu ID es ${newOrder._id} y el precio es $${total}.`;
-            const assistantMessage = { role: 'assistant', content: confirmationMessage, timestamp: new Date() };
-            chat.messages.push(assistantMessage);
-    
-            return confirmationMessage;
-        } catch (error) {
-            console.error("Error al crear el pedido:", error);
-            const errorMessage = "Error al crear el pedido. Inténtalo de nuevo más tarde.";
-            const assistantMessage = { role: 'assistant', content: errorMessage, timestamp: new Date() };
-            chat.messages.push(assistantMessage);
-    
-            return errorMessage;
-        }
-    }
 
     const assistantMessage = { role: 'assistant', content: llmResponse, timestamp: new Date() };
     chat.messages.push(assistantMessage);
