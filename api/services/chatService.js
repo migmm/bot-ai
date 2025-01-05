@@ -69,8 +69,30 @@ export const handleChat = async (message, customerId) => {
             break;
 
         case 'pedidos':
-            relevantData = await queryHandlers.handlePedidosQuery(customerId, message, chatHistory);
-            break;
+            if (chatHistory[customerId].orderItems.length === 0) {
+                return "No has agregado ningún ítem al pedido. Por favor, agrega ítems antes de confirmar.";
+            }
+
+            if (message.toLowerCase().includes("confirmar") ||
+                message.toLowerCase().includes("sí") ||
+                message.toLowerCase().includes("listo") ||
+                message.toLowerCase().includes("ok")) {
+
+                try {
+                    const pedidoResponse = await queryHandlers.handlePedidosQuery("confirmar", customerId, chatHistory);
+
+                    await classifyQuery("confirmar pedido");
+
+                    return `¡Pedido confirmado! ${pedidoResponse}`;
+                } catch (error) {
+                    console.error("Error al confirmar el pedido:", error);
+                    return "Hubo un problema al confirmar tu pedido. Por favor, inténtalo de nuevo más tarde.";
+                }
+            } else {
+                const menuResponse = await queryHandlers.handleProductosQuery();
+                return `Aquí está nuestro menú:\n${menuResponse}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".`;
+            }
+
 
         case 'info':
             relevantData = await queryHandlers.handleInfoQuery();
