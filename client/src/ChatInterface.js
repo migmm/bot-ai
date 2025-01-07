@@ -15,9 +15,10 @@ const ChatInterface = () => {
 
     // Effect for initial focus and scroll behavior
     useEffect(() => {
+        scrollToBottom();
         inputRef.current?.focus();
-    }, []); // Run once on mount
-
+    }, [messages]);
+    
     // Effect for scrolling on new messages
     useEffect(() => {
         scrollToBottom();
