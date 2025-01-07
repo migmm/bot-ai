@@ -5,13 +5,16 @@ import Promo from '../models/Promo.js';
 import Schedule from '../models/Schedule.js';
 import BusinessInfo from '../models/BusinessInfo.js';
 import Order from '../models/Order.js';
-import { getBusinessStatusWithTimeInfo } from '../utils/timeUtils.js';
-import { extractDateFromQuery } from '../utils/dateUtils.js';
 
 export const handleHorariosQuery = async (queryDate, locales) => {
     try {
         const scheduleFromDB = await Schedule.find();
-        return JSON.stringify(scheduleFromDB);
+        console.log("scheduleFromDB",scheduleFromDB)
+        const formattedSchedule = scheduleFromDB.map(schedule => {
+            return `${schedule.day}: ${schedule.openTime} - ${schedule.closeTime}`;
+        }).join('\n');
+
+        return `Nuestros horarios de la semana son:\n\n${formattedSchedule}\n\n¿Te gustaría hacer un pedido para hoy? (Sí/No)`;
     } catch (error) {
         console.error("Error al obtener el horario:", error);
         return "Error al obtener el horario. Inténtalo de nuevo más tarde.";
