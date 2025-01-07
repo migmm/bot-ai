@@ -4,10 +4,16 @@ import { getBusinessStatusWithTimeInfo } from '../utils/timeUtils.js';
 import { extractDateFromQuery } from '../utils/dateUtils.js';
 import * as queryHandlers from './queryHandlers.js';
 import BusinessInfo from '../models/BusinessInfo.js';
+import Schedule from '../models/Schedule.js';
+import Holiday from '../models/Holiday.js';
 
 const chatHistory = {};
 
 const classifyQuery = async (message) => {
+    if (message.trim() === "3") {
+        return "horarios";
+    }
+
     const classificationPrompt = config.classificationPrompt.replace('{{MESSAGE}}', message);
     console.log("Prompt de clasificación:", classificationPrompt);
 
@@ -42,7 +48,7 @@ export const handleChat = async (message, customerId) => {
     }
 
     const queryDate = extractDateFromQuery(message);
-    const { businessStatus, timeInfo } = getBusinessStatusWithTimeInfo(queryDate, config.locales);
+    const { businessStatus, timeInfo } = await getBusinessStatusWithTimeInfo(queryDate, config.locales);
 
     const queryType = await classifyQuery(message);
     let relevantData = '';
@@ -70,7 +76,7 @@ export const handleChat = async (message, customerId) => {
 
         case 'pedidos':
             if (chatHistory[customerId].orderItems.length === 0) {
-                return "No has agregado ningún ítem al pedido. Por favor, agrega ítems antes de confirmar.";
+                return { response: "No has agregado ningún ítem al pedido. Por favor, agrega ítems antes de confirmar." };
             }
 
             if (message.toLowerCase().includes("confirmar") ||
@@ -83,16 +89,15 @@ export const handleChat = async (message, customerId) => {
 
                     await classifyQuery("confirmar pedido");
 
-                    return `¡Pedido confirmado! ${pedidoResponse}`;
+                    return { response: `¡Pedido confirmado! ${pedidoResponse}` };
                 } catch (error) {
                     console.error("Error al confirmar el pedido:", error);
-                    return "Hubo un problema al confirmar tu pedido. Por favor, inténtalo de nuevo más tarde.";
+                    return { response: "Hubo un problema al confirmar tu pedido. Por favor, inténtalo de nuevo más tarde." };
                 }
             } else {
                 const menuResponse = await queryHandlers.handleProductosQuery();
-                return `Aquí está nuestro menú:\n${menuResponse}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".`;
+                return { response: `Aquí está nuestro menú:\n${menuResponse}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".` };
             }
-
 
         case 'info':
             relevantData = await queryHandlers.handleInfoQuery();
@@ -131,5 +136,5 @@ export const handleChat = async (message, customerId) => {
     const assistantMessage = { role: 'assistant', content: llmResponse, timestamp: new Date() };
     chat.messages.push(assistantMessage);
 
-    return llmResponse;
+    return { response: llmResponse };
 };
