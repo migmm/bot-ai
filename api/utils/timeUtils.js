@@ -1,18 +1,18 @@
-import schedule from '../data/schedule.js';
-import holidays from '../data/holidays.js';
+import Schedule from '../models/Schedule.js';
+import Holiday from '../models/Holiday.js';
 import { config } from '../config/constants.js';
 
-export const getBusinessStatus = (date = new Date()) => {
+export const getBusinessStatus = async (date = new Date()) => {
     const targetDate = new Date(date);
     const today = targetDate.toISOString().split('T')[0];
 
     console.log("Fecha actual:", today);
 
+    const holidays = await Holiday.find();
     const normalizedHolidays = holidays.map(h => ({
         ...h,
         date: new Date(h.date).toISOString().split('T')[0]
     }));
-
 
     const holiday = normalizedHolidays.find(h => h.date === today);
     console.log("Feriado encontrado:", holiday);
@@ -27,9 +27,9 @@ export const getBusinessStatus = (date = new Date()) => {
         };
     }
 
-
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const currentDay = days[targetDate.getDay()];
+    const schedule = await Schedule.find();
     const daySchedule = schedule.find(s => s.day === currentDay);
 
     console.log("Día actual:", currentDay);
@@ -94,9 +94,9 @@ export const getTimeInfo = (queryDate, locales) => {
     };
 };
 
-export const getBusinessStatusWithTimeInfo = (queryDate, locales) => {
+export const getBusinessStatusWithTimeInfo = async (queryDate, locales) => {
     const now = new Date();
-    const businessStatus = queryDate ? getBusinessStatus(queryDate) : getBusinessStatus(now);
+    const businessStatus = queryDate ? await getBusinessStatus(queryDate) : await getBusinessStatus(now);
     const timeInfo = getTimeInfo(queryDate, locales);
     return { businessStatus, timeInfo };
 };
