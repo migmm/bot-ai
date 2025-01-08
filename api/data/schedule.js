@@ -1,42 +1,42 @@
 const schedule = [
     {
-        day: "Monday",
+        day: "Lunes",
         openTime: "09:00 AM",
         closeTime: "10:00 PM",
         isDeliveryAvailable: true
     },
     {
-        day: "Tuesday",
+        day: "Martes",
         openTime: "09:00 AM",
         closeTime: "10:00 PM",
         isDeliveryAvailable: true
     },
     {
-        day: "Wednesday",
+        day: "Miércoles",
         openTime: "09:00 AM",
         closeTime: "10:00 PM",
         isDeliveryAvailable: true
     },
     {
-        day: "Thursday",
+        day: "Jueves",
         openTime: "09:00 AM",
         closeTime: "10:00 PM",
         isDeliveryAvailable: true
     },
     {
-        day: "Friday",
+        day: "Viernes",
         openTime: "09:00 AM",
         closeTime: "11:00 PM",
         isDeliveryAvailable: true
     },
     {
-        day: "Saturday",
+        day: "Sábado",
         openTime: "10:00 AM",
         closeTime: "11:00 PM",
         isDeliveryAvailable: true
     },
     {
-        day: "Sunday",
+        day: "Domingo",
         openTime: "10:00 AM",
         closeTime: "09:00 PM",
         isDeliveryAvailable: true
