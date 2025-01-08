@@ -8,6 +8,11 @@ import Order from '../models/Order.js';
 
 const chatHistory = {};
 
+const isOrderId = (message) => {
+    // Validar si el mensaje es un número de pedido (por ejemplo, 6 caracteres alfanuméricos)
+    return /^[A-Z0-9]{6}$/.test(message);
+};
+
 // Mapeo de números a opciones
 const numberToOptionMap = {
     1: 'ver el menú',
@@ -72,7 +77,16 @@ export const handleChat = async (message, customerId) => {
     const { businessStatus, timeInfo } = await getBusinessStatusWithTimeInfo(queryDate, config.locales);
 
     // Clasificar la consulta del usuario
-    const queryType = await classifyQuery(message);
+    let queryType;
+
+    // Validar si el mensaje es un número de pedido
+    if (isOrderId(message)) {
+        queryType = 'consultar un pedido';
+    } else {
+        // Si no es un número de pedido, clasificar la consulta usando el LLM
+        queryType = await classifyQuery(message);
+    }
+
     let relevantData = '';
 
     // Manejar la consulta según su tipo
@@ -93,65 +107,27 @@ export const handleChat = async (message, customerId) => {
             relevantData = await queryHandlers.handlePedidosQuery(message, customerId, chatHistory);
             break;
 
-        case 'consultar información del local':
-            relevantData = await queryHandlers.handleInfoQuery();
-            handleOrdenesQuery
-            break;
-
-        case 'agregar_item':
-            relevantData = await queryHandlers.handleAgregarItemQuery(message, customerId, chatHistory);
-            break;
-
-        case 'pedidos':
-            if (
-                message.toLowerCase().includes("confirmar") ||
-                message.toLowerCase().includes("sí") ||
-                message.toLowerCase().includes("claro") ||
-                message.toLowerCase().includes("ok") ||
-                message.toLowerCase().includes("listo") ||
-                message.toLowerCase().includes("nada más") ||
-                message.toLowerCase().includes("solo eso")
-            ) {
-                // Obtener el resumen del pedido
-                const orderSummary = chatHistory[customerId].orderItems.map(item =>
-                    `- ${item.name} (x${item.quantity})`
-                ).join('\n');
-                const total = chatHistory[customerId].orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-                // Guardar el pedido en la base de datos
-                const newOrder = new Order({
-                    customerId,
-                    items: chatHistory[customerId].orderItems,
-                    total,
-                    status: "Pending",
-                    createdAt: new Date()
-                });
-                await newOrder.save();
-
-                // Limpiar el carrito
-                chatHistory[customerId].orderItems = [];
-
-                // Mostrar el mensaje final
-                return {
-                    response: `✅ **Pedido Confirmado** ✅\n\n${orderSummary}\n💰 *Total*: $${total}\n\nGracias por tu compra. ¡Esperamos verte pronto!`
-                };
-            }
-            break;
-
         case 'consultar un pedido':
             // Si el mensaje es solo "6" o "consultar un pedido", pedir el customerId
             if (message.trim() === "6" || message.trim().toLowerCase() === "consultar un pedido") {
-                return { response: "Por favor, proporciona el número de pedido (customerId) que deseas consultar." };
+                return { response: "Por favor, proporciona el número de pedido que deseas consultar." };
             }
 
-            // Extraer el customerId del mensaje (por ejemplo, "NRMOB1")
+            // Extraer el customerId del mensaje (por ejemplo, "HAGUXF")
             const customerIdToSearch = message.trim();
 
             // Buscar el pedido con el customerId proporcionado
             const orderDetails = await queryHandlers.handleOrdenesQuery(customerIdToSearch);
 
+            if (orderDetails.includes("No se encontraron pedidos")) {
+                return { response: "No se encontró ningún pedido con ese número. Por favor, verifica el número e inténtalo de nuevo." };
+            }
+
             // Devolver los detalles del pedido
             return { response: orderDetails };
+
+        case 'info':
+            relevantData = await queryHandlers.handleInfoQuery();
             break;
 
         default:
