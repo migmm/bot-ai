@@ -1,6 +1,5 @@
 import Order from '../models/Order.js';
 
-// Crear una nueva orden
 export const createOrder = async (req, res) => {
     try {
         const { customerId, items, total } = req.body;
@@ -12,7 +11,6 @@ export const createOrder = async (req, res) => {
     }
 };
 
-// Obtener una orden por ID de cliente
 export const getOrderByCustomerId = async (req, res) => {
     try {
         const order = await Order.findOne({ customerId: req.params.customerId });
@@ -25,7 +23,6 @@ export const getOrderByCustomerId = async (req, res) => {
     }
 };
 
-// Actualizar el estado de una orden
 export const updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body;
@@ -43,7 +40,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 };
 
-// Obtener todas las órdenes (opcional, para administración)
+
 export const getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find();
