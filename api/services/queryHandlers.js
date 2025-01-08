@@ -3,6 +3,7 @@ import Promo from '../models/Promo.js';
 import Schedule from '../models/Schedule.js';
 import BusinessInfo from '../models/BusinessInfo.js';
 import Order from '../models/Order.js';
+import { config } from '../config/constants.js';
 
 export const handleHorariosQuery = async (queryDate, locales) => {
     try {
@@ -42,12 +43,12 @@ export const handleOrdenesQuery = async (customerId) => {
 
         // Formatear la información de los pedidos
         const formattedOrders = orders.map((order, index) => {
-            return `📦 **Pedido ${index + 1}**\n` +
-                   `🆔 *ID del Pedido*: ${order._id}\n` +
-                   `🛒 *Ítems*:\n${order.items.map(item => `   - ${item.name} (x${item.quantity})`).join('\n')}\n` +
-                   `💰 *Total*: $${order.total}\n` +
-                   `📅 *Fecha*: ${new Date(order.createdAt).toLocaleDateString(config.locales)}\n` +
-                   `📝 *Estado*: ${order.status}\n`;
+            return `📦 **Tu Pedido**\n` +
+                   `🆔 **ID del Pedido**: ${order.customerId}\n` +
+                   `🛒 **Ítems**:\n${order.items.map(item => `   - ${item.name} (x${item.quantity})`).join('\n')}\n` +
+                   `💰 **Total**: $${order.total}\n` +
+                   `📅 **Fecha**: ${new Date(order.createdAt).toLocaleDateString(config.locales)}\n` +
+                   `📝 **Estado**: ${order.status}\n`;
         }).join('\n');
 
         return formattedOrders;
@@ -56,7 +57,6 @@ export const handleOrdenesQuery = async (customerId) => {
         return "Error al obtener las órdenes. Inténtalo de nuevo más tarde.";
     }
 };
-
 export const handleProductosQuery = async () => {
     try {
         const menuFromDB = await Menu.find();
