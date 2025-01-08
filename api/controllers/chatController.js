@@ -21,7 +21,7 @@ export const sendMessage = async (req, res) => {
         if (!clientCustomerId) {
             // Check if the response already includes a welcome message
             if (!response.includes("¡Bienvenido")) {
-                finalResponse = `¡Bienvenido! Your order number is: ${customerId}. ${response}`;
+                finalResponse = `¡Bienvenido! Tu número de orden es: ${customerId}. ${response}`;
             }
         }
 
