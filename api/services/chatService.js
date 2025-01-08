@@ -4,16 +4,31 @@ import { getBusinessStatusWithTimeInfo } from '../utils/timeUtils.js';
 import { extractDateFromQuery } from '../utils/dateUtils.js';
 import * as queryHandlers from './queryHandlers.js';
 import BusinessInfo from '../models/BusinessInfo.js';
-import Schedule from '../models/Schedule.js';
-import Holiday from '../models/Holiday.js';
+import Order from '../models/Order.js';
 
 const chatHistory = {};
 
+// Mapeo de números a opciones
+const numberToOptionMap = {
+    1: 'ver el menú',
+    2: 'ver promociones',
+    3: 'consultar horarios',
+    4: 'hacer un pedido',
+    5: 'consultar información del local',
+    6: 'consultar un pedido'
+};
+
+// Función para clasificar la consulta
 const classifyQuery = async (message) => {
-    if (message.trim() === "3") {
-        return "horarios";
+    // Si el mensaje es un número, traducirlo a la opción correspondiente
+    if (!isNaN(message)) {
+        const option = numberToOptionMap[message];
+        if (option) {
+            return option;
+        }
     }
 
+    // Si no es un número, continuar con la clasificación normal usando el LLM
     const classificationPrompt = config.classificationPrompt.replace('{{MESSAGE}}', message);
     console.log("Prompt de clasificación:", classificationPrompt);
 
@@ -26,6 +41,7 @@ const classifyQuery = async (message) => {
     return response.trim().toLowerCase();
 };
 
+// Función principal para manejar el chat
 export const handleChat = async (message, customerId) => {
     if (!customerId) {
         throw new Error("customerId is required");
@@ -35,6 +51,7 @@ export const handleChat = async (message, customerId) => {
         throw new Error("message must be a non-empty string");
     }
 
+    // Inicializar el historial de chat si no existe
     if (!chatHistory[customerId]) {
         chatHistory[customerId] = { messages: [], orderItems: [] };
     }
@@ -43,31 +60,42 @@ export const handleChat = async (message, customerId) => {
     const userMessage = { role: 'user', content: message, timestamp: new Date() };
     chat.messages.push(userMessage);
 
+    // Limitar el historial de mensajes a los últimos 10
     if (chat.messages.length > 10) {
         chat.messages = chat.messages.slice(-10);
     }
 
+    // Extraer la fecha de la consulta (si existe)
     const queryDate = extractDateFromQuery(message);
+
+    // Obtener el estado del negocio y la información de tiempo
     const { businessStatus, timeInfo } = await getBusinessStatusWithTimeInfo(queryDate, config.locales);
 
+    // Clasificar la consulta del usuario
     const queryType = await classifyQuery(message);
     let relevantData = '';
 
+    // Manejar la consulta según su tipo
     switch (queryType) {
-        case 'horarios':
-            relevantData = await queryHandlers.handleHorariosQuery(queryDate, config.locales);
+        case 'ver el menú':
+            relevantData = await queryHandlers.handleProductosQuery();
             break;
 
-        case 'promociones':
+        case 'ver promociones':
             relevantData = await queryHandlers.handlePromocionesQuery();
             break;
 
-        case 'ordenes':
-            relevantData = await queryHandlers.handleOrdenesQuery(customerId);
+        case 'consultar horarios':
+            relevantData = await queryHandlers.handleHorariosQuery(queryDate, config.locales);
             break;
 
-        case 'productos':
-            relevantData = await queryHandlers.handleProductosQuery();
+        case 'hacer un pedido':
+            relevantData = await queryHandlers.handlePedidosQuery(message, customerId, chatHistory);
+            break;
+
+        case 'consultar información del local':
+            relevantData = await queryHandlers.handleInfoQuery();
+            handleOrdenesQuery
             break;
 
         case 'agregar_item':
@@ -75,32 +103,55 @@ export const handleChat = async (message, customerId) => {
             break;
 
         case 'pedidos':
-            if (chatHistory[customerId].orderItems.length === 0) {
-                return { response: "No has agregado ningún ítem al pedido. Por favor, agrega ítems antes de confirmar." };
-            }
-
-            if (message.toLowerCase().includes("confirmar") ||
+            if (
+                message.toLowerCase().includes("confirmar") ||
                 message.toLowerCase().includes("sí") ||
+                message.toLowerCase().includes("claro") ||
+                message.toLowerCase().includes("ok") ||
                 message.toLowerCase().includes("listo") ||
-                message.toLowerCase().includes("ok")) {
+                message.toLowerCase().includes("nada más") ||
+                message.toLowerCase().includes("solo eso")
+            ) {
+                // Obtener el resumen del pedido
+                const orderSummary = chatHistory[customerId].orderItems.map(item =>
+                    `- ${item.name} (x${item.quantity})`
+                ).join('\n');
+                const total = chatHistory[customerId].orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-                try {
-                    const pedidoResponse = await queryHandlers.handlePedidosQuery("confirmar", customerId, chatHistory);
+                // Guardar el pedido en la base de datos
+                const newOrder = new Order({
+                    customerId,
+                    items: chatHistory[customerId].orderItems,
+                    total,
+                    status: "Pending",
+                    createdAt: new Date()
+                });
+                await newOrder.save();
 
-                    await classifyQuery("confirmar pedido");
+                // Limpiar el carrito
+                chatHistory[customerId].orderItems = [];
 
-                    return { response: `¡Pedido confirmado! ${pedidoResponse}` };
-                } catch (error) {
-                    console.error("Error al confirmar el pedido:", error);
-                    return { response: "Hubo un problema al confirmar tu pedido. Por favor, inténtalo de nuevo más tarde." };
-                }
-            } else {
-                const menuResponse = await queryHandlers.handleProductosQuery();
-                return { response: `Aquí está nuestro menú:\n${menuResponse}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".` };
+                // Mostrar el mensaje final
+                return {
+                    response: `✅ **Pedido Confirmado** ✅\n\n${orderSummary}\n💰 *Total*: $${total}\n\nGracias por tu compra. ¡Esperamos verte pronto!`
+                };
+            }
+            break;
+
+        case 'consultar un pedido':
+            // Si el mensaje es solo "6" o "consultar un pedido", pedir el customerId
+            if (message.trim() === "6" || message.trim().toLowerCase() === "consultar un pedido") {
+                return { response: "Por favor, proporciona el número de pedido (customerId) que deseas consultar." };
             }
 
-        case 'info':
-            relevantData = await queryHandlers.handleInfoQuery();
+            // Extraer el customerId del mensaje (por ejemplo, "NRMOB1")
+            const customerIdToSearch = message.trim();
+
+            // Buscar el pedido con el customerId proporcionado
+            const orderDetails = await queryHandlers.handleOrdenesQuery(customerIdToSearch);
+
+            // Devolver los detalles del pedido
+            return { response: orderDetails };
             break;
 
         default:
@@ -108,8 +159,10 @@ export const handleChat = async (message, customerId) => {
             break;
     }
 
+    // Obtener la información del negocio desde la base de datos
     const businessInfoFromDB = await BusinessInfo.findOne();
 
+    // Construir el prompt final para el LLM
     let finalSystemPrompt = config.llmSystemPrompt
         .replace('{{BUSINESS_NAME}}', businessInfoFromDB.name)
         .replace('{{BUSINESS_INFO}}', JSON.stringify(businessInfoFromDB));
@@ -126,15 +179,19 @@ export const handleChat = async (message, customerId) => {
 
     finalSystemPrompt += ` El cliente dijo: "${message}"`;
 
+    // Preparar los mensajes para el LLM
     const messages = [
         { role: 'system', content: finalSystemPrompt },
         ...chat.messages.map(msg => ({ role: msg.role, content: msg.content }))
     ];
 
+    // Llamar al LLM para obtener la respuesta
     const llmResponse = await callLLM(messages);
 
+    // Guardar la respuesta del asistente en el historial de chat
     const assistantMessage = { role: 'assistant', content: llmResponse, timestamp: new Date() };
     chat.messages.push(assistantMessage);
 
+    // Devolver la respuesta al cliente
     return { response: llmResponse };
 };
