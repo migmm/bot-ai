@@ -16,7 +16,7 @@ const businessInfoSchema = Joi.object({
 // Chat Schema
 const chatSchema = Joi.object({
     message: Joi.string().required(),
-    customerId: Joi.string().required()
+    customerId: Joi.string()
 });
 
 // Holiday Schema
@@ -52,7 +52,7 @@ const orderSchema = Joi.object({
 });
 
 const orderStatusSchema = Joi.object({
-    status: Joi.string().valid('Pendiente', 'En Proceso', 'Completado', 'Cancelado').required()
+    status: Joi.string().valid('En prepración', 'Repartiendo', 'Entregado', 'Cancelado').required()
 });
 
 // Promo Schema
