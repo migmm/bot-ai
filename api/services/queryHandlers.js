@@ -3,14 +3,19 @@ import Promo from '../models/Promo.js';
 import Schedule from '../models/Schedule.js';
 import BusinessInfo from '../models/BusinessInfo.js';
 import Order from '../models/Order.js';
-import { config } from '../config/constants.js';
+import { 
+    formatSchedule, 
+    formatPromos, 
+    formatOrders, 
+    formatMenu, 
+    formatBusinessInfo, 
+    formatConfirmedOrder 
+} from '../utils/formatters.js';
 
 export const handleHorariosQuery = async (queryDate, locales) => {
     try {
         const scheduleFromDB = await Schedule.find();
-        const formattedSchedule = scheduleFromDB.map(schedule => {
-            return `⏰ **${schedule.day}**: ${schedule.openTime} - ${schedule.closeTime}`;
-        }).join('\n');
+        const formattedSchedule = formatSchedule(scheduleFromDB);
 
         return `📅 **Nuestros Horarios** 📅\n\n${formattedSchedule}\n\n¿Te gustaría hacer un pedido para hoy? (Sí/No)`;
     } catch (error) {
@@ -18,12 +23,11 @@ export const handleHorariosQuery = async (queryDate, locales) => {
         return "Error al obtener el horario. Inténtalo de nuevo más tarde.";
     }
 };
+
 export const handlePromocionesQuery = async () => {
     try {
         const promosFromDB = await Promo.find();
-        const promosFormatted = promosFromDB.map(promo => {
-            return `🎉 **${promo.title}**: ${promo.description}\n🤑 *Descuento*: ${promo.discount}%\n📅 *Válido hasta*: ${new Date(promo.validUntil).toLocaleDateString(config.locales)}\n`;
-        }).join('\n');
+        const promosFormatted = formatPromos(promosFromDB);
 
         return `🎊 **Promociones Activas** 🎊\n\n${promosFormatted}`;
     } catch (error) {
@@ -34,41 +38,24 @@ export const handlePromocionesQuery = async () => {
 
 export const handleOrdenesQuery = async (customerId) => {
     try {
-        // Buscar todos los pedidos asociados al customerId
         const orders = await Order.find({ customerId });
 
         if (orders.length === 0) {
             return "No se encontraron pedidos para este número de pedido.";
         }
 
-        // Formatear la información de los pedidos
-        const formattedOrders = orders.map((order, index) => {
-            return `📦 **Tu Pedido**\n` +
-                   `🆔 **ID del Pedido**: ${order.customerId}\n` +
-                   `🛒 **Ítems**:\n${order.items.map(item => `   - ${item.name} (x${item.quantity})`).join('\n')}\n` +
-                   `💰 **Total**: $${order.total}\n` +
-                   `📅 **Fecha**: ${new Date(order.createdAt).toLocaleDateString(config.locales)}\n` +
-                   `📝 **Estado**: ${order.status}\n`;
-        }).join('\n');
-
+        const formattedOrders = formatOrders(orders);
         return formattedOrders;
     } catch (error) {
         console.error("Error al obtener las órdenes:", error);
         return "Error al obtener las órdenes. Inténtalo de nuevo más tarde.";
     }
 };
+
 export const handleProductosQuery = async () => {
     try {
         const menuFromDB = await Menu.find();
-        const menuFormatted = menuFromDB.map(item => {
-            let emoji = '🍣'; // Emoji por defecto para sushi
-            if (item.category === 'soups') emoji = '🍜';
-            if (item.category === 'sauces') emoji = '🥫';
-            if (item.category === 'drinks') emoji = '🍶';
-            if (item.category === 'desserts') emoji = '🍨';
-
-            return `${emoji} **${item.name}**: $${item.price}\n🥢 *Descripción*: ${item.description}\n🍴 *Piezas*: ${item.pieces || 'N/A'}\n📏 *Tamaño*: ${item.size || 'N/A'}\n🥤 *Volumen*: ${item.volume || 'N/A'}\n🍽️ *Porciones*: ${item.servings || 'N/A'}\n`;
-        }).join('\n');
+        const menuFormatted = formatMenu(menuFromDB);
 
         return `🍱 **Menú del Restaurante** 🍱\n\n${menuFormatted}`;
     } catch (error) {
@@ -112,7 +99,7 @@ export const handlePedidosQuery = async (message, customerId, chatHistory) => {
                 customerId,
                 items,
                 total,
-                status: "Pending",
+                status: "En prepración",
                 createdAt: new Date()
             });
 
@@ -120,16 +107,14 @@ export const handlePedidosQuery = async (message, customerId, chatHistory) => {
 
             chatHistory[customerId].orderItems = [];
 
-            return `✅ **Pedido Confirmado** ✅\n\n🆔 *ID del Pedido*: ${newOrder._id}\n💰 *Total*: $${total}\n📅 *Fecha*: ${new Date(newOrder.createdAt).toLocaleDateString(config.locales)}\n\nGracias por tu compra. ¡Esperamos verte pronto!`;
+            return formatConfirmedOrder(newOrder, total);
         } catch (error) {
             console.error("Error al crear el pedido:", error);
             return "Hubo un problema al confirmar tu pedido. Por favor, inténtalo de nuevo más tarde.";
         }
     } else {
         const menuFromDB = await Menu.find();
-        const menuList = menuFromDB.map(item =>
-            `🍣 **${item.name}**: $${item.price}\n🥢 *Descripción*: ${item.description}\n🍴 *Piezas*: ${item.pieces || 'N/A'}\n📏 *Tamaño*: ${item.size || 'N/A'}\n🥤 *Volumen*: ${item.volume || 'N/A'}\n🍽️ *Porciones*: ${item.servings || 'N/A'}\n`
-        ).join('\n');
+        const menuList = formatMenu(menuFromDB);
 
         return `🍱 **Menú del Restaurante** 🍱\n\n${menuList}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".`;
     }
@@ -138,7 +123,7 @@ export const handlePedidosQuery = async (message, customerId, chatHistory) => {
 export const handleInfoQuery = async () => {
     try {
         const businessInfoFromDB = await BusinessInfo.findOne();
-        return `🏢 **Información del Local** 🏢\n\n📍 *Dirección*: ${businessInfoFromDB.address}, ${businessInfoFromDB.city}, ${businessInfoFromDB.state}\n📞 *Teléfono*: ${businessInfoFromDB.phone}\n📧 *Email*: ${businessInfoFromDB.email}`;
+        return formatBusinessInfo(businessInfoFromDB);
     } catch (error) {
         console.error("Error al obtener la información del negocio:", error);
         return "Error al obtener la información del negocio. Inténtalo de nuevo más tarde.";
