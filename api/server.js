@@ -17,6 +17,9 @@ app.use(cors({
     origin: '*',
 }));
 
+app.use(express.static('public', { extensions: ['html', 'htm'] }));
+
+
 connectDB();
 
 app.use('/api', chatRoutes);
