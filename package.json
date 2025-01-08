@@ -7,11 +7,12 @@
         "api"
     ],
     "scripts": {
-        "start": "concurrently \"npm start --prefix client\" \"npm start --prefix api\"",
+        "start:dev": "concurrently \"npm start --prefix client\" \"npm start --prefix api\"",
         "start:client": "npm start --prefix client",
         "start:api": "npm start --prefix api",
         "build": "npm run build --prefix client",
-        "seed": "npm run seed --prefix api"
+        "seed": "npm run seed --prefix api",
+        "start": "npm start --prefix api"
     },
     "devDependencies": {
         "concurrently": "^8.2.2"
