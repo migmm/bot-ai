@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { connectDB } from './config/database.js';
 import chatRoutes from './routes/chatRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
@@ -12,9 +13,11 @@ import { config } from './config/constants.js';
 const app = express();
 app.use(express.json());
 
-connectDB();
+app.use(cors({
+    origin: '*',
+}));
 
-//seedDatabase();
+connectDB();
 
 app.use('/api', chatRoutes);
 app.use('/api', menuRoutes);
