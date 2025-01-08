@@ -1,8 +1,8 @@
 # Sistema de Gestión para Restaurante de Sushi
 
-<img align="center" src="assets/logo.png" alt="Sap logo"/>
-
 Este proyecto es un sistema de gestión para un restaurante de sushi, diseñado para manejar diversas funcionalidades como la gestión de menús, promociones, horarios, feriados, pedidos, y un chatbot para interactuar con los clientes. El sistema está construido utilizando Node.js, Express, y MongoDB como base de datos.
+
+<img align="center" src="assets/logo.png" alt="Logo"/>
 
 ## Estructura del Proyecto
 
@@ -28,6 +28,7 @@ El proyecto está organizado en diferentes carpetas y archivos para mantener un 
 ### 4. **Gestión de Horarios**
 
 -   **Obtener horarios**: `GET /api/schedule`
+-   **Agregar un horario**: `POST /api/schedule/:id`
 -   **Actualizar horarios**: `PUT /api/schedule/:id`
 
 ### 5. **Gestión de Feriados**
@@ -54,33 +55,34 @@ El proyecto está organizado en diferentes carpetas y archivos para mantener un 
 Primero, clona el repositorio desde GitHub (o desde donde tengas alojado el proyecto) usando el siguiente comando:
 
 ```bash
-git clone https://github.com/tu-usuario/tu-repositorio.git
+git clone https://github.com/migmm/bot-ai.git
 ```
 
-Reemplaza https://github.com/tu-usuario/tu-repositorio.git con la URL de tu repositorio. 
+Reemplaza https://github.com/migmm/bot-ai.git con la URL de tu repositorio. 
 
 2. **Instalar Dependencias**
 
 Navega a la carpeta del proyecto y ejecuta el siguiente comando para instalar las dependencias necesarias:
 
 ```bash
-cd tu-repositorio
+cd bot-ai
 npm install
 ```
 
-Esto instalará todas las dependencias listadas en el archivo package.json, como Express, Mongoose, Axios, etc. 3. **Configurar Variables de Entorno**
+Esto instalará todas las dependencias listadas en el archivo package.json, como Express, Mongoose, Axios, etc. 
 
-Crea un archivo .env en la raíz del proyecto y copia las variables de entorno del archivo .env.sample. Luego, completa los valores necesarios:
 
-```bash
-cp .env.sample .env
-```
-
-Edita el archivo .env y completa los valores:
 
 ### 1. **Variables de Entorno**
 
--   Crea un archivo `.env` en la raíz del proyecto basado en el archivo `.env.sample`.
+Hay dos archivos .env, uno para el frontend y otro para el backend
+
+Para el frontend crear un .env dentro de client basandose en el  `.env.sample`
+    Define las siguientes variables:
+-   `REACT_APP_API_URL`: la url del backend 
+    Este env es solo para pruebas ya que en el build en producción se crea en la carpeta public del backend para ser servido desde express. 
+
+Para el backend crea un archivo `.env` en la raíz del proyecto basado en el archivo `.env.sample`.
 -   Define las siguientes variables:
     -   `LLM_API_URL`: URL de la API del modelo de lenguaje.
     -   `LLM_API_KEY`: Clave de API para el modelo de lenguaje.
@@ -137,7 +139,7 @@ Este comando ejecutará el script seed.js, que insertará los datos iniciales (m
      ```bash
      npm run start
      ```
-   - El servidor estará disponible en `http://localhost:3000`.
+   - El servidor estará disponible en `http://localhost:3001`.
 
 ## Flujo de Trabajo para Pedir un Plato
 
@@ -147,7 +149,7 @@ El flujo de trabajo para pedir un plato en este sistema se divide en varios paso
 
 El cliente envía un mensaje al chatbot para solicitar información sobre el menú o para realizar un pedido. Por ejemplo:
 
-    Mensaje del cliente: "Quiero hacer un pedido."
+    Mensaje del cliente: "hola"
 
 2. Clasificación de la Consulta
 
@@ -159,26 +161,41 @@ El chatbot responde con el menú disponible, utilizando la función handleProduc
 
     Respuesta del chatbot:
 
-    Aquí está nuestro menú:
-    - California Roll: $12.99
-      Descripción: Rollo con cangrejo, aguacate y pepino.
-    - Spicy Tuna Roll: $14.99
-      Descripción: Rollo picante con atún fresco.
-    ...
-    Puedes agregar ítems diciendo "Quiero un [nombre del ítem]".
+    ¡Bienvenido! Tu número de pedido es: XSKY3Z. ¡Hola! ¿En qué puedo ayudarte? 1. Ver el menú 2. Ver promociones 3. Consultar horarios 4. Hacer un pedido 5. Consultar información del local.
 
+4. Selección de Ítems
+
+El cliente selecciona los ítems que desea pedir. Por ejemplo:
+
+    Mensaje del cliente: "1"
+
+El chatbot utiliza la función handleAgregarItemQuery para procesar el mensaje y agregar los ítems seleccionados al pedido temporal del cliente.
+
+    Respuesta del chatbot:
+
+        
+            
+¡Excelente elección! Nuestro menú se organiza por categorías para que puedencontrar lo que estás buscando con facilidad. Aquí te presentamos nuestras opciones: 
+Appetizer
+Edamame: $4.5
+Gyoza: $6
+Agedashi Tofu: $5.50 
+Sushi Classic Roll
+California Roll: $8
+Salmon Roll: $9
+...
+¿Te gustaría hacer un pedido? (Sí/No)
 1. Selección de Ítems
 
 El cliente selecciona los ítems que desea pedir. Por ejemplo:
 
-    Mensaje del cliente: "Quiero un California Roll y un Spicy Tuna Roll."
+    Mensaje del cliente: "Quiero un California Roll"
 
 El chatbot utiliza la función handleAgregarItemQuery para procesar el mensaje y agregar los ítems seleccionados al pedido temporal del cliente.
 
     Respuesta del chatbot:
 
     Se agregó California Roll al pedido.
-    Se agregó Spicy Tuna Roll al pedido.
 
 1. Confirmación del Pedido
 
@@ -220,7 +237,7 @@ A continuación, se explica cómo funciona el código detrás de este flujo de t
 El chatbot utiliza la función classifyQuery para determinar el tipo de consulta. Esta función envía el mensaje del cliente al modelo de lenguaje (LLM) para clasificarlo.
 javascript
 Copy
-
+```javascript
 const classifyQuery = async (message) => {
     const classificationPrompt = config.classificationPrompt.replace('{{MESSAGE}}', message);
     const response = await callLLM([
@@ -229,13 +246,13 @@ const classifyQuery = async (message) => {
     ]);
     return response.trim().toLowerCase();
 };
-
+```
 2. Manejo de la Selección de Ítems
 
 La función handleAgregarItemQuery procesa el mensaje del cliente para identificar los ítems solicitados y los agrega al pedido temporal.
 javascript
 Copy
-
+```javascript
 export const handleAgregarItemQuery = async (message, customerId, chatHistory) => {
     const menuItems = await Menu.find();
     const itemNames = menuItems.map(item => item.name.toLowerCase());
@@ -256,12 +273,12 @@ export const handleAgregarItemQuery = async (message, customerId, chatHistory) =
     }
 };
 
+```
 3. Confirmación y Creación del Pedido
 
 La función handlePedidosQuery maneja la confirmación del pedido y la creación de la orden en la base de datos.
-javascript
-Copy
 
+```javascript
 export const handlePedidosQuery = async (message, customerId, chatHistory) => {
     if (message.toLowerCase().includes("confirmar") || message.toLowerCase().includes("listo")) {
         try {
@@ -297,15 +314,15 @@ export const handlePedidosQuery = async (message, customerId, chatHistory) => {
         ).join('\n');
 
         return `Aquí está nuestro menú:\n${menuList}\n\nPuedes agregar ítems diciendo "Quiero un [nombre del ítem]".`;
-    }
+    }    
 };
+```
 
 4. Interacción con el Modelo de Lenguaje (LLM)
 
 El chatbot utiliza la función callLLM para interactuar con el modelo de lenguaje y generar respuestas contextuales.
-javascript
-Copy
 
+```javascript
 export const callLLM = async (messages) => {
     try {
         const response = await axios.post(
@@ -329,6 +346,7 @@ export const callLLM = async (messages) => {
         return "Hubo un error al procesar tu solicitud. Inténtalo de nuevo más tarde.";
     }
 };
+```
 
 Resumen del Flujo
 
