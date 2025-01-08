@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import logo from './assets/images/logo.png';
 
 const ChatInterface = () => {
     const [messages, setMessages] = useState([]);
@@ -50,8 +51,8 @@ const ChatInterface = () => {
         try {
             setLoading(true);
             setError(null);
-
-            const response = await fetch('http://localhost:3001/api/chat', {
+    
+            const response = await fetch(`${process.env.REACT_APP_API_URL}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -61,32 +62,33 @@ const ChatInterface = () => {
                     customerId: customerId || undefined,
                 }),
             });
-
+    
             if (!response.ok) throw new Error('Error en la comunicación con el servidor');
-
+    
             const data = await response.json();
-
+    
             // Si no tenemos un customerId, lo guardamos
             if (!customerId && data.customerId) {
                 setCustomerId(data.customerId);
             }
-
+    
             // Formatear el mensaje antes de agregarlo
             const formattedResponse = formatMessage(data.response);
-
+    
             // Agregamos el mensaje del usuario y la respuesta del bot
             setMessages(prev => [
                 ...prev,
                 { type: 'user', content: text },
                 { type: 'bot', content: formattedResponse }
             ]);
-
+    
         } catch (err) {
             setError('Hubo un error al enviar el mensaje. Por favor, intenta nuevamente.');
         } finally {
             setLoading(false);
         }
     };
+    
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -102,6 +104,7 @@ const ChatInterface = () => {
             <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
                 <div className="space-y-4">
                     <div className="text-center space-y-2">
+                        <img src={logo} alt="Logo" className="mx-auto mb-4 w-32 h-32" />
                         <p className="text-gray-900">Hola, soy el bot de El Japonés</p>
                         <p className="text-gray-900">Para iniciar el chat escribí "hola"</p>
                         {customerId && (
