@@ -1,0 +1,365 @@
+{
+    "info": {
+      "_postman_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "name": "El Japones API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Business Info",
+        "item": [
+          {
+            "name": "Get Business Info",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "http://localhost:3001/api/business-info",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "business-info"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Update Business Info",
+            "request": {
+              "method": "PUT",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"name\": \"El Japones\",\n    \"address\": \"Güemes 3000\",\n    \"city\": \"CABA\",\n    \"state\": \"Buenos Aires\",\n    \"zip\": \"1425\",\n    \"phone\": \"555-555-5555\",\n    \"email\": \"info@eljapones.com\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/business-info/1",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "business-info", "1"]
+              }
+            },
+            "response": []
+          }
+        ]
+      },
+      {
+        "name": "Chat",
+        "item": [
+          {
+            "name": "Send Message",
+            "request": {
+              "method": "POST",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"message\": \"Hola, quiero hacer un pedido\",\n    \"customerId\": \"ABC123\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/chat",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "chat"]
+              }
+            },
+            "response": []
+          }
+        ]
+      },
+      {
+        "name": "Holidays",
+        "item": [
+          {
+            "name": "Get Holidays",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "http://localhost:3001/api/holidays",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "holidays"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Add Holiday",
+            "request": {
+              "method": "POST",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"date\": \"2025-01-01\",\n    \"name\": \"Año Nuevo\",\n    \"reopenDate\": \"2025-01-02\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/holidays",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "holidays"]
+              }
+            },
+            "response": []
+          }
+        ]
+      },
+      {
+        "name": "Menu",
+        "item": [
+          {
+            "name": "Get Menu",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "http://localhost:3001/api/menu",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "menu"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Add Menu Item",
+            "request": {
+              "method": "POST",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"name\": \"California Roll\",\n    \"category\": \"sushi\",\n    \"price\": 12.99,\n    \"description\": \"Rollo con cangrejo, aguacate y pepino, cubierto de semillas de sésamo.\",\n    \"pieces\": 8\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/menu",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "menu"]
+              }
+            },
+            "response": []
+          }
+        ]
+      },
+      {
+        "name": "Orders",
+        "item": [
+          {
+            "name": "Create Order",
+            "request": {
+              "method": "POST",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"customerId\": \"ABC123\",\n    \"items\": [\n        {\n            \"name\": \"California Roll\",\n            \"quantity\": 2,\n            \"price\": 12.99\n        }\n    ],\n    \"total\": 25.98\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/orders",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "orders"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Get Order by Customer ID",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "http://localhost:3001/api/orders/ABC123",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "orders", "ABC123"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Update Order Status",
+            "request": {
+              "method": "PUT",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"status\": \"Entregado\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/orders/1",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "orders", "1"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Get All Orders",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "http://localhost:3001/api/orders",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "orders"]
+              }
+            },
+            "response": []
+          }
+        ]
+      },
+      {
+        "name": "Promos",
+        "item": [
+          {
+            "name": "Get Promos",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "http://localhost:3001/api/promos",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "promos"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Add Promo",
+            "request": {
+              "method": "POST",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"title\": \"Descuento 20% en Rollos de Atún\",\n    \"description\": \"Obtén un 20% de descuento en todos los rollos de atún hasta el 31 de enero.\",\n    \"discount\": 20,\n    \"validUntil\": \"2025-01-31T23:59:59.000Z\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/promos",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "promos"]
+              }
+            },
+            "response": []
+          }
+        ]
+      },
+      {
+        "name": "Schedule",
+        "item": [
+          {
+            "name": "Get Schedule",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "http://localhost:3001/api/schedule",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "schedule"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Create Schedule",
+            "request": {
+              "method": "POST",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"day\": \"Lunes\",\n    \"openTime\": \"09:00 AM\",\n    \"closeTime\": \"10:00 PM\",\n    \"isDeliveryAvailable\": true\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/schedule",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "schedule"]
+              }
+            },
+            "response": []
+          },
+          {
+            "name": "Update Schedule",
+            "request": {
+              "method": "PUT",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"day\": \"Lunes\",\n    \"openTime\": \"09:00 AM\",\n    \"closeTime\": \"10:00 PM\",\n    \"isDeliveryAvailable\": true\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              },
+              "url": {
+                "raw": "http://localhost:3001/api/schedule/1",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "3001",
+                "path": ["api", "schedule", "1"]
+              }
+            },
+            "response": []
+          }
+        ]
+      }
+    ]
+  }
