@@ -12,6 +12,12 @@ import {
     formatConfirmedOrder 
 } from '../utils/formatters.js';
 
+/*
+* handleHorariosQuery - Handles queries related to business schedules.
+* @param {Date} queryDate - The date for which the schedule is requested.
+* @param {Object} locales - Localization settings for formatting.
+* @returns {string} - Formatted schedule information or an error message.
+*/
 export const handleHorariosQuery = async (queryDate, locales) => {
     try {
         const scheduleFromDB = await Schedule.find();
@@ -24,6 +30,10 @@ export const handleHorariosQuery = async (queryDate, locales) => {
     }
 };
 
+/*
+* handlePromocionesQuery - Handles queries related to active promotions.
+* @returns {string} - Formatted promotions information or an error message.
+*/
 export const handlePromocionesQuery = async () => {
     try {
         const promosFromDB = await Promo.find();
@@ -36,6 +46,11 @@ export const handlePromocionesQuery = async () => {
     }
 };
 
+/*
+* handleOrdenesQuery - Handles queries related to customer orders.
+* @param {string} customerId - The customer's unique identifier.
+* @returns {string} - Formatted order details or an error message.
+*/
 export const handleOrdenesQuery = async (customerId) => {
     try {
         const orders = await Order.find({ customerId });
@@ -52,6 +67,10 @@ export const handleOrdenesQuery = async (customerId) => {
     }
 };
 
+/*
+* handleProductosQuery - Handles queries related to the restaurant menu.
+* @returns {string} - Formatted menu information or an error message.
+*/
 export const handleProductosQuery = async () => {
     try {
         const menuFromDB = await Menu.find();
@@ -64,6 +83,13 @@ export const handleProductosQuery = async () => {
     }
 };
 
+/*
+* handleAgregarItemQuery - Handles adding items to a customer's order.
+* @param {string} message - The customer's message containing the item request.
+* @param {string} customerId - The customer's unique identifier.
+* @param {Object} chatHistory - The chat history for the customer.
+* @returns {string} - Confirmation of item addition or an error message.
+*/
 export const handleAgregarItemQuery = async (message, customerId, chatHistory) => {
     const menuItems = await Menu.find();
     const itemNames = menuItems.map(item => item.name.toLowerCase());
@@ -84,6 +110,13 @@ export const handleAgregarItemQuery = async (message, customerId, chatHistory) =
     }
 };
 
+/*
+* handlePedidosQuery - Handles order confirmation and menu display.
+* @param {string} message - The customer's message indicating confirmation or menu request.
+* @param {string} customerId - The customer's unique identifier.
+* @param {Object} chatHistory - The chat history for the customer.
+* @returns {string} - Confirmation of order or the restaurant menu.
+*/
 export const handlePedidosQuery = async (message, customerId, chatHistory) => {
     if (message.toLowerCase().includes("confirmar") || message.toLowerCase().includes("listo") || message.toLowerCase().includes("sí") || message.toLowerCase().includes("si") || message.toLowerCase().includes("ok")) {
         try {
@@ -120,6 +153,10 @@ export const handlePedidosQuery = async (message, customerId, chatHistory) => {
     }
 };
 
+/*
+* handleInfoQuery - Handles queries related to business information.
+* @returns {string} - Formatted business information or an error message.
+*/
 export const handleInfoQuery = async () => {
     try {
         const businessInfoFromDB = await BusinessInfo.findOne();

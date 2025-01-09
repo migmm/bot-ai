@@ -6,14 +6,25 @@ import * as queryHandlers from './queryHandlers.js';
 import BusinessInfo from '../models/BusinessInfo.js';
 import Order from '../models/Order.js';
 
+/*
+* chatHistory - Object to store chat history for each customer.
+* Structure: { customerId: { messages: [], orderItems: [] } }
+*/
 const chatHistory = {};
 
+/*
+* isOrderId - Validates if a message is an order ID.
+* @param {string} message - The message to validate.
+* @returns {boolean} - True if the message is a valid order ID, false otherwise.
+*/
 const isOrderId = (message) => {
-    // Validar si el mensaje es un número de pedido (por ejemplo, 6 caracteres alfanuméricos)
     return /^[A-Z0-9]{6}$/.test(message);
 };
 
-// Mapeo de números a opciones
+/*
+* numberToOptionMap - Mapping of numbers to predefined query options.
+* Used to translate numeric inputs into specific query types.
+*/
 const numberToOptionMap = {
     1: 'ver el menú',
     2: 'ver promociones',
@@ -23,9 +34,13 @@ const numberToOptionMap = {
     6: 'consultar un pedido'
 };
 
-// Función para clasificar la consulta
+/*
+* classifyQuery - Classifies a customer query using the LLM or predefined mappings.
+* @param {string} message - The customer's message.
+* @returns {string} - The classified query type.
+*/
 const classifyQuery = async (message) => {
-    // Si el mensaje es un número, traducirlo a la opción correspondiente
+    // If the message is a number, translate it to the corresponding option.
     if (!isNaN(message)) {
         const option = numberToOptionMap[message];
         if (option) {
@@ -33,7 +48,7 @@ const classifyQuery = async (message) => {
         }
     }
 
-    // Si no es un número, continuar con la clasificación normal usando el LLM
+    // If not a number, classify the query using the LLM.
     const classificationPrompt = config.classificationPrompt.replace('{{MESSAGE}}', message);
     console.log("Prompt de clasificación:", classificationPrompt);
 
@@ -46,7 +61,13 @@ const classifyQuery = async (message) => {
     return response.trim().toLowerCase();
 };
 
-// Función principal para manejar el chat
+/*
+* handleChat - Main function to process customer messages and generate responses.
+* @param {string} message - The customer's message.
+* @param {string} customerId - The unique identifier for the customer.
+* @returns {Object} - The response object containing the LLM's reply.
+* @throws {Error} - If customerId is missing or the message is invalid.
+*/
 export const handleChat = async (message, customerId) => {
     if (!customerId) {
         throw new Error("customerId is required");
@@ -56,7 +77,7 @@ export const handleChat = async (message, customerId) => {
         throw new Error("message must be a non-empty string");
     }
 
-    // Inicializar el historial de chat si no existe
+    // Initialize chat history if it doesn't exist for the customer.
     if (!chatHistory[customerId]) {
         chatHistory[customerId] = { messages: [], orderItems: [] };
     }
@@ -65,31 +86,31 @@ export const handleChat = async (message, customerId) => {
     const userMessage = { role: 'user', content: message, timestamp: new Date() };
     chat.messages.push(userMessage);
 
-    // Limitar el historial de mensajes a los últimos 10
+    // Limit chat history to the last 10 messages.
     if (chat.messages.length > 10) {
         chat.messages = chat.messages.slice(-10);
     }
 
-    // Extraer la fecha de la consulta (si existe)
+    // Extract date from the query if present.
     const queryDate = extractDateFromQuery(message);
 
-    // Obtener el estado del negocio y la información de tiempo
+    // Get business status and time information.
     const { businessStatus, timeInfo } = await getBusinessStatusWithTimeInfo(queryDate, config.locales);
 
-    // Clasificar la consulta del usuario
+    // Classify the customer's query.
     let queryType;
 
-    // Validar si el mensaje es un número de pedido
+    // Check if the message is an order ID.
     if (isOrderId(message)) {
         queryType = 'consultar un pedido';
     } else {
-        // Si no es un número de pedido, clasificar la consulta usando el LLM
+        // If not, classify the query using the LLM.
         queryType = await classifyQuery(message);
     }
 
     let relevantData = '';
 
-    // Manejar la consulta según su tipo
+    // Handle the query based on its type.
     switch (queryType) {
         case 'ver el menú':
             relevantData = await queryHandlers.handleProductosQuery();
@@ -112,22 +133,22 @@ export const handleChat = async (message, customerId) => {
             break;
 
         case 'consultar un pedido':
-            // Si el mensaje es solo "6" o "consultar un pedido", pedir el customerId
+            // If the message is just "6" or "consultar un pedido", ask for the order ID.
             if (message.trim() === "6" || message.trim().toLowerCase() === "consultar un pedido") {
                 return { response: "Por favor, proporciona el número de pedido que deseas consultar." };
             }
 
-            // Extraer el customerId del mensaje (por ejemplo, "HAGUXF")
+            // Extract the order ID from the message.
             const customerIdToSearch = message.trim();
 
-            // Buscar el pedido con el customerId proporcionado
+            // Search for the order with the provided ID.
             const orderDetails = await queryHandlers.handleOrdenesQuery(customerIdToSearch);
 
             if (orderDetails.includes("No se encontraron pedidos")) {
                 return { response: "No se encontró ningún pedido con ese número. Por favor, verifica el número e inténtalo de nuevo." };
             }
 
-            // Devolver los detalles del pedido
+            // Return the order details.
             return { response: orderDetails };
 
         case 'info':
@@ -139,10 +160,10 @@ export const handleChat = async (message, customerId) => {
             break;
     }
 
-    // Obtener la información del negocio desde la base de datos
+    // Retrieve business information from the database.
     const businessInfoFromDB = await BusinessInfo.findOne();
 
-    // Construir el prompt final para el LLM
+    // Construct the final prompt for the LLM.
     let finalSystemPrompt = config.llmSystemPrompt
         .replace('{{BUSINESS_NAME}}', businessInfoFromDB.name)
         .replace('{{BUSINESS_INFO}}', JSON.stringify(businessInfoFromDB));
@@ -159,19 +180,19 @@ export const handleChat = async (message, customerId) => {
 
     finalSystemPrompt += ` El cliente dijo: "${message}"`;
 
-    // Preparar los mensajes para el LLM
+    // Prepare messages for the LLM.
     const messages = [
         { role: 'system', content: finalSystemPrompt },
         ...chat.messages.map(msg => ({ role: msg.role, content: msg.content }))
     ];
 
-    // Llamar al LLM para obtener la respuesta
+    // Call the LLM to generate a response.
     const llmResponse = await callLLM(messages);
 
-    // Guardar la respuesta del asistente en el historial de chat
+    // Save the assistant's response in the chat history.
     const assistantMessage = { role: 'assistant', content: llmResponse, timestamp: new Date() };
     chat.messages.push(assistantMessage);
 
-    // Devolver la respuesta al cliente
+    // Return the response to the customer.
     return { response: llmResponse };
 };
