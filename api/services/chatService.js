@@ -95,16 +95,20 @@ export const handleChat = async (message, customerId) => {
             relevantData = await queryHandlers.handleProductosQuery();
             break;
 
+        case 'agregar_item':
+            relevantData = await queryHandlers.handleAgregarItemQuery(message, customerId, chatHistory);
+            break;
+
+        case 'confirmar_pedido':
+            relevantData = await queryHandlers.handlePedidosQuery(message, customerId, chatHistory);
+            break;
+
         case 'ver promociones':
             relevantData = await queryHandlers.handlePromocionesQuery();
             break;
 
         case 'consultar horarios':
             relevantData = await queryHandlers.handleHorariosQuery(queryDate, config.locales);
-            break;
-
-        case 'hacer un pedido':
-            relevantData = await queryHandlers.handlePedidosQuery(message, customerId, chatHistory);
             break;
 
         case 'consultar un pedido':

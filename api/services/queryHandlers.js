@@ -85,7 +85,7 @@ export const handleAgregarItemQuery = async (message, customerId, chatHistory) =
 };
 
 export const handlePedidosQuery = async (message, customerId, chatHistory) => {
-    if (message.toLowerCase().includes("confirmar") || message.toLowerCase().includes("listo")) {
+    if (message.toLowerCase().includes("confirmar") || message.toLowerCase().includes("listo") || message.toLowerCase().includes("sí") || message.toLowerCase().includes("si") || message.toLowerCase().includes("ok")) {
         try {
             const items = chatHistory[customerId].orderItems;
 
@@ -99,7 +99,7 @@ export const handlePedidosQuery = async (message, customerId, chatHistory) => {
                 customerId,
                 items,
                 total,
-                status: "En prepración",
+                status: "En preparación",
                 createdAt: new Date()
             });
 
