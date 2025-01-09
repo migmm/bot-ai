@@ -30,7 +30,7 @@ app.use('/api', holidayRoutes);
 app.use('/api', businessInfoRoutes);
 app.use('/api', orderRoutes);
 
-const PORT = config.serverPort || 3000;
+const PORT = config.serverPort || 3001;
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
